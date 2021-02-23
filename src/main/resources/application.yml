@@ -4,3 +4,7 @@ line:
     channel-secret: 'c9d04fa28b735a4ba296864e700c9ee3'
     handler:
       path: /callback
+server:
+  servlet:
+    context-path: /linebot
+  port: 18080
