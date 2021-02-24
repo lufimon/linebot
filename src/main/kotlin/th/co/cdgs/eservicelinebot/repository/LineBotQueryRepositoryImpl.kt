@@ -5,7 +5,9 @@ import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import th.co.cdgs.eservicelinebot.model.CsstListMng
 import th.co.cdgs.eservicelinebot.utils.Constants
+import java.time.LocalDateTime
 import javax.persistence.EntityManager
+import javax.persistence.NoResultException
 
 @Repository
 class LineBotQueryRepositoryImpl(override var entityManager: EntityManager) : LineBotQueryRepository() {
@@ -50,7 +52,9 @@ class LineBotQueryRepositoryImpl(override var entityManager: EntityManager) : Li
             if (csstListMng != null) {
                 val sql = "UPDATE CSSTLISTMNG " +
                         "SET LINEGROUP_NAME = :lineGroupName, " +
-                        "LINEGROUP_ID = :lineGroupId " +
+                        "LINEGROUP_ID = :lineGroupId," +
+                        "UPDATE_BY = :updateBy," +
+                        "UPDATE_DATE = :updateDate " +
                         "WHERE LISTSEQ = :listSeq "
                 val query = entityManager.createNativeQuery(sql)
                 if (isAdd && (csstListMng.linegroupId?.isNotBlank() == true && csstListMng.linegroupId?.isNotEmpty() == true)) {
@@ -58,6 +62,8 @@ class LineBotQueryRepositoryImpl(override var entityManager: EntityManager) : Li
                 } else {
                     query.setParameter("lineGroupName", lineName)
                     query.setParameter("lineGroupId", lineId)
+                    query.setParameter("updateBy", "MOBILE")
+                    query.setParameter("updateDate", LocalDateTime.now())
                     query.setParameter("listSeq", csstListMng.listseq)
                     query.executeUpdate()
                     Constants.ADD_SUCCESS_MESSAGE
@@ -65,10 +71,12 @@ class LineBotQueryRepositoryImpl(override var entityManager: EntityManager) : Li
             } else {
                 Constants.ERROR_DEPARTMENT_MESSAGE
             }
+        } catch (e: NoResultException) {
+            Constants.ERROR_DEPARTMENT_MESSAGE
         } catch (e: Exception) {
-            e.printStackTrace()
             Constants.EXCEPTION_MESSAGE
         }
+
     }
 
 }

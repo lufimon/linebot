@@ -94,15 +94,9 @@ class BusinessServiceImpl @Autowired constructor(queryRepo: LineBotQueryReposito
                         val groupId = (event.source as GroupSource).groupId
                         val depart = text.split(":")[2]
                         if(depart.isNotBlank() && depart.isNotEmpty()) {
-                            lineMessagingClient?.getGroupMemberProfile(groupId, userId)
-                                    ?.whenComplete { profile, throwable ->
-                                        if (throwable != null) {
-                                            replyText(replyToken, Constants.ERROR_MESSAGE)
-                                            return@whenComplete
-                                        }
-                                        val messageResult = queryRepository.updateDepartment(true, profile.displayName, groupId, depart)
-                                        replyText(replyToken, messageResult)
-                                    }
+                            val groupSummary = lineMessagingClient?.getGroupSummary(groupId)?.get()
+                            val messageResult = queryRepository.updateDepartment(true, groupSummary?.groupName ?: depart.toUpperCase(), groupId, depart)
+                            replyText(replyToken, messageResult)
                         } else {
                             replyText(replyToken, Constants.PLEASE_ENTER_DEPARTMENT_MESSAGE)
                         }
@@ -136,8 +130,8 @@ class BusinessServiceImpl @Autowired constructor(queryRepo: LineBotQueryReposito
             text == Constants.BOT_COMMAND -> {
                 replyText(replyToken, Constants.COMMAND_MESSAGE)
             }
-            text == Constants.BOT_ELSE -> {
-                replyText(replyToken, Constants.COMMAND_MESSAGE)
+            text.contains(Constants.BOT_ELSE) -> {
+                replyText(replyToken, Constants.ERROR_COMMAND_MESSAGE)
             }
         }
     }
