@@ -4,6 +4,7 @@ import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import th.co.cdgs.eservicelinebot.model.CsstListMng
+import th.co.cdgs.eservicelinebot.model.LineBotRequest
 import th.co.cdgs.eservicelinebot.utils.Constants
 import java.time.LocalDateTime
 import javax.persistence.EntityManager
@@ -76,7 +77,24 @@ class LineBotQueryRepositoryImpl(override var entityManager: EntityManager) : Li
         } catch (e: Exception) {
             Constants.EXCEPTION_MESSAGE
         }
+    }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    override fun updateCsstHotline(lineBotRequest: LineBotRequest): Boolean {
+        return try {
+            val sql = "UPDATE CSSTHOTLINE SET FLAG_LINE = :flagLine, DEPT_LINE = :deptLine, CALL_LINE = :callLine, UPDATE_BY = :updateBy, UPDATE_DATE = :updateDate WHERE HOTLINE_ID = :hotlineId"
+            val query = entityManager.createNativeQuery(sql)
+            query.setParameter("flagLine", "SL")
+            query.setParameter("deptLine", lineBotRequest.deptSupport)
+            query.setParameter("callLine", lineBotRequest.lineGroupName)
+            query.setParameter("updateBy", "MOBILE")
+            query.setParameter("updateDate", LocalDateTime.now())
+            query.setParameter("hotlineId", lineBotRequest.hotlineId)
+            query.executeUpdate()
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
 }

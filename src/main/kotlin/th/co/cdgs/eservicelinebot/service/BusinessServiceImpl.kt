@@ -8,24 +8,49 @@ import com.linecorp.bot.model.event.message.TextMessageContent
 import com.linecorp.bot.model.event.source.GroupSource
 import com.linecorp.bot.model.message.Message
 import com.linecorp.bot.model.message.TextMessage
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.lang.NonNull
 import org.springframework.stereotype.Service
-import th.co.cdgs.eservicelinebot.controller.LineBotController
+import th.co.cdgs.eservicelinebot.model.LineBotRequest
 import th.co.cdgs.eservicelinebot.repository.LineBotQueryRepository
 import th.co.cdgs.eservicelinebot.utils.Constants
+import java.lang.StringBuilder
+import java.text.SimpleDateFormat
+import java.util.*
 import java.util.concurrent.ExecutionException
-import java.util.logging.Logger
 
 @Service
 class BusinessServiceImpl @Autowired constructor(queryRepo: LineBotQueryRepository) : BusinessService {
 
     private val queryRepository = queryRepo
 
-    private val log: Logger = Logger.getLogger(BusinessServiceImpl::class.java.simpleName)
+    private val log = LoggerFactory.getLogger(BusinessServiceImpl::class.java.simpleName)
 
     @Autowired
     private val lineMessagingClient: LineMessagingClient? = null
+
+    override fun linebotBoardCast(lineBotRequest: LineBotRequest?): Boolean {
+        if (lineBotRequest != null) {
+            val sb = StringBuilder()
+            val date = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(lineBotRequest.receiveDate)
+            val c = Calendar.getInstance()
+            c.time = date
+            val dateTime = "${c.get(Calendar.DAY_OF_MONTH)}/${c.get(Calendar.MONTH) + 1}/${c.get(Calendar.YEAR) + 543} ${c.get(Calendar.HOUR_OF_DAY)}:${c.get(Calendar.MINUTE)}".trim()
+            sb.append("Hotline ID : ${lineBotRequest.hotlineId ?: "-"}, ${dateTime}\n")
+            sb.append("Contract : ${lineBotRequest.contractCode ?: "-"}\n")
+            sb.append("Caller/Oper : ${lineBotRequest.callerName ?: "-"} || ${lineBotRequest.telephoneNo ?: "-"}\n")
+            sb.append("Location : ${lineBotRequest.serviceLocation ?: "-"}\n")
+            sb.append("Product : ${lineBotRequest.model ?: "-"}\n")
+            sb.append("Serial : ${lineBotRequest.serialNo ?: "-"}\n")
+            sb.append("Symptom : ${lineBotRequest.symptom ?: "-"}\n")
+            sb.append("Status : Opening")
+            pushText(lineBotRequest.lineGroupId!!, sb.toString())
+            return queryRepository.updateCsstHotline(lineBotRequest)
+        } else {
+            return false
+        }
+    }
 
     override fun reply(@NonNull replyToken: String, @NonNull message: Message) {
         reply(replyToken, listOf(message))
@@ -89,13 +114,14 @@ class BusinessServiceImpl @Autowired constructor(queryRepo: LineBotQueryReposito
         when {
             text.contains(Constants.BOT_ADD) -> {
                 val userId = event.source.userId
-                if(userId != null) {
+                if (userId != null) {
                     if (event.source is GroupSource) {
                         val groupId = (event.source as GroupSource).groupId
                         val depart = text.split(":")[2]
-                        if(depart.isNotBlank() && depart.isNotEmpty()) {
+                        if (depart.isNotBlank() && depart.isNotEmpty()) {
                             val groupSummary = lineMessagingClient?.getGroupSummary(groupId)?.get()
-                            val messageResult = queryRepository.updateDepartment(true, groupSummary?.groupName ?: depart.toUpperCase(), groupId, depart)
+                            val messageResult = queryRepository.updateDepartment(true, groupSummary?.groupName
+                                    ?: depart.toUpperCase(), groupId, depart)
                             replyText(replyToken, messageResult)
                         } else {
                             replyText(replyToken, Constants.PLEASE_ENTER_DEPARTMENT_MESSAGE)
@@ -109,13 +135,14 @@ class BusinessServiceImpl @Autowired constructor(queryRepo: LineBotQueryReposito
             }
             text.contains(Constants.BOT_UPDATE) -> {
                 val userId = event.source.userId
-                if(userId != null) {
+                if (userId != null) {
                     if (event.source is GroupSource) {
                         val groupId = (event.source as GroupSource).groupId
                         val depart = text.split(":")[2]
-                        if(depart.isNotBlank() && depart.isNotEmpty()) {
+                        if (depart.isNotBlank() && depart.isNotEmpty()) {
                             val groupSummary = lineMessagingClient?.getGroupSummary(groupId)?.get()
-                            val messageResult = queryRepository.updateDepartment(false, groupSummary?.groupName ?: depart.toUpperCase(), groupId, depart)
+                            val messageResult = queryRepository.updateDepartment(false, groupSummary?.groupName
+                                    ?: depart.toUpperCase(), groupId, depart)
                             replyText(replyToken, messageResult)
                         } else {
                             replyText(replyToken, Constants.PLEASE_ENTER_DEPARTMENT_MESSAGE)

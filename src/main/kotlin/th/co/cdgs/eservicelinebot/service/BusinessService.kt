@@ -7,6 +7,7 @@ import com.linecorp.bot.model.event.message.TextMessageContent
 import com.linecorp.bot.model.message.Message
 import com.linecorp.bot.model.message.TextMessage
 import org.springframework.lang.NonNull
+import th.co.cdgs.eservicelinebot.model.LineBotRequest
 import java.util.concurrent.ExecutionException
 
 interface BusinessService {
@@ -28,4 +29,6 @@ interface BusinessService {
     fun pushText(@NonNull id: String, @NonNull message: String)
 
     fun handleTextContent(replyToken: String, event: Event, content: TextMessageContent)
+
+    fun linebotBoardCast(lineBotRequest: LineBotRequest?): Boolean
 }
